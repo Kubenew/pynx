@@ -4,6 +4,7 @@
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pynx-proxy)](https://pypi.org/project/pynx-proxy/)
 [![PyPI - License](https://img.shields.io/pypi/l/pynx-proxy)](https://github.com/Kubenew/pynx/blob/main/LICENSE)
 [![GitHub Last Commit](https://img.shields.io/github/last-commit/Kubenew/pynx)](https://github.com/Kubenew/pynx)
+[![Downloads](https://pepy.tech/badge/pynx-proxy)](https://pepy.tech/project/pynx-proxy)
 
 **pynx** is a minimal Nginx-like async reverse proxy / edge router written in Python.
 
