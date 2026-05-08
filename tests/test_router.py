@@ -31,3 +31,100 @@ def test_longest_location_match():
     loc = router.resolve(req)
     assert loc is not None
     assert loc.upstream == "b"
+
+
+def test_exact_match():
+    router = Router([
+        ServerBlock(
+            listen="0.0.0.0:8080",
+            server_name="example.com",
+            locations=[
+                Location(path="/", type="prefix", upstream="a"),
+                Location(path="/api", type="exact", upstream="b"),
+            ],
+        )
+    ])
+
+    loc = router.resolve(make_request("example.com", "/api"))
+    assert loc is not None
+    assert loc.upstream == "b"
+
+    loc = router.resolve(make_request("example.com", "/api/users"))
+    assert loc is not None
+    assert loc.upstream == "a"
+
+
+def test_segment_boundary_matching():
+    router = Router([
+        ServerBlock(
+            listen="0.0.0.0:8080",
+            server_name="example.com",
+            locations=[
+                Location(path="/api", type="prefix", upstream="api_upstream"),
+            ],
+        )
+    ])
+
+    loc = router.resolve(make_request("example.com", "/api/users"))
+    assert loc is not None
+
+    loc = router.resolve(make_request("example.com", "/apixyz"))
+    assert loc is None, "/api should not match /apixyz"
+
+    loc = router.resolve(make_request("example.com", "/api"))
+    assert loc is not None
+
+
+def test_root_prefix_matches_everything():
+    router = Router([
+        ServerBlock(
+            listen="0.0.0.0:8080",
+            server_name="example.com",
+            locations=[
+                Location(path="/", type="prefix", upstream="default"),
+            ],
+        )
+    ])
+
+    assert router.resolve(make_request("example.com", "/")) is not None
+    assert router.resolve(make_request("example.com", "/anything")) is not None
+
+
+def test_no_matching_server():
+    router = Router([
+        ServerBlock(
+            listen="0.0.0.0:8080",
+            server_name="example.com",
+            locations=[Location(path="/", type="prefix", upstream="a")],
+        )
+    ])
+
+    loc = router.resolve(make_request("other.com", "/"))
+    assert loc is None
+
+
+def test_no_matching_location():
+    router = Router([
+        ServerBlock(
+            listen="0.0.0.0:8080",
+            server_name="example.com",
+            locations=[Location(path="/api", type="exact", upstream="a")],
+        )
+    ])
+
+    loc = router.resolve(make_request("example.com", "/"))
+    assert loc is None
+
+
+def test_host_header_with_port():
+    router = Router([
+        ServerBlock(
+            listen="0.0.0.0:8080",
+            server_name="example.com",
+            locations=[Location(path="/", type="prefix", upstream="a")],
+        )
+    ])
+
+    req = make_request("example.com:8080", "/")
+    loc = router.resolve(req)
+    assert loc is not None

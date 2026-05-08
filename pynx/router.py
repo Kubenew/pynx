@@ -13,9 +13,14 @@ class Location:
     upstream: str
 
     def match(self, request: Request) -> bool:
+        path = request.url.path
         if self.type == "exact":
-            return request.url.path == self.path
-        return request.url.path.startswith(self.path)
+            return path == self.path
+        if not path.startswith(self.path):
+            return False
+        if self.path == "/":
+            return True
+        return len(path) == len(self.path) or path[len(self.path)] == "/"
 
 
 @dataclass

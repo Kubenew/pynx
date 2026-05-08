@@ -5,6 +5,10 @@ from typing import List
 import yaml
 
 
+class ConfigError(Exception):
+    pass
+
+
 @dataclass
 class LocationConfig:
     path: str
@@ -52,9 +56,46 @@ class PynxConfig:
     healthcheck: HealthcheckConfig
 
 
+def _validate(raw: dict):
+    servers = raw.get("servers")
+    if not servers:
+        raise ConfigError("At least one server block is required.")
+
+    for i, srv in enumerate(servers):
+        if "listen" not in srv:
+            raise ConfigError(f"server[{i}]: 'listen' is required.")
+        if "server_name" not in srv:
+            raise ConfigError(f"server[{i}]: 'server_name' is required.")
+        if "locations" not in srv or not srv["locations"]:
+            raise ConfigError(f"server[{i}]: at least one location is required.")
+        for j, loc in enumerate(srv["locations"]):
+            if "path" not in loc:
+                raise ConfigError(f"server[{i}].locations[{j}]: 'path' is required.")
+            if "upstream" not in loc:
+                raise ConfigError(f"server[{i}].locations[{j}]: 'upstream' is required.")
+
+    upstreams = raw.get("upstreams")
+    if not upstreams:
+        raise ConfigError("At least one upstream is required.")
+    for name, up in upstreams.items():
+        if "servers" not in up or not up["servers"]:
+            raise ConfigError(f"upstream '{name}': at least one server is required.")
+        for j, srv in enumerate(up["servers"]):
+            if "url" not in srv:
+                raise ConfigError(f"upstream '{name}'.servers[{j}]: 'url' is required.")
+
+    for srv in servers:
+        for loc in srv.get("locations") or []:
+            up_name = loc["upstream"]
+            if up_name not in upstreams:
+                raise ConfigError(f"upstream '{up_name}' referenced by location '{loc['path']}' not defined.")
+
+
 def load_config(path: str) -> PynxConfig:
     with open(path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f) or {}
+
+    _validate(raw)
 
     servers: List[ServerConfig] = []
     for srv in raw.get("servers") or []:

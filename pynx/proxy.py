@@ -21,24 +21,30 @@ def _filter_headers(headers: dict) -> dict:
     return {k: v for k, v in headers.items() if k.lower() not in HOP_BY_HOP_HEADERS}
 
 
-async def forward(request: Request, backend_url: str) -> Response:
-    target = backend_url.rstrip("/") + request.url.path
-    if request.url.query:
-        target += "?" + request.url.query
+class ProxyClient:
+    def __init__(self, timeout: int = 30):
+        self._client = httpx.AsyncClient(follow_redirects=False, timeout=timeout)
 
-    body = await request.body()
+    async def forward(self, request: Request, backend_url: str) -> Response:
+        target = backend_url.rstrip("/") + request.url.path
+        if request.url.query:
+            target += "?" + request.url.query
 
-    async with httpx.AsyncClient(follow_redirects=False, timeout=30) as client:
-        resp = await client.request(
+        body = await request.body()
+
+        resp = await self._client.request(
             method=request.method,
             url=target,
             headers=_filter_headers(dict(request.headers)),
             content=body,
         )
 
-    return Response(
-        content=resp.content,
-        status_code=resp.status_code,
-        headers=_filter_headers(dict(resp.headers)),
-        media_type=resp.headers.get("content-type"),
-    )
+        return Response(
+            content=resp.content,
+            status_code=resp.status_code,
+            headers=_filter_headers(dict(resp.headers)),
+            media_type=resp.headers.get("content-type"),
+        )
+
+    async def close(self):
+        await self._client.aclose()

@@ -1,0 +1,2 @@
+[console_scripts]
+pynx = pynx.cli:app

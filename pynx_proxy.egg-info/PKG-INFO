@@ -1,0 +1,55 @@
+Metadata-Version: 2.4
+Name: pynx-proxy
+Version: 0.1.0
+Summary: Nginx-like async edge router / reverse proxy in pure Python.
+Author: Kubenew
+License-Expression: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: starlette>=0.37.2
+Requires-Dist: uvicorn>=0.30.0
+Requires-Dist: httpx>=0.27.0
+Requires-Dist: pyyaml>=6.0.1
+Requires-Dist: typer>=0.12.3
+Requires-Dist: prometheus-client>=0.20.0
+Dynamic: license-file
+
+# pynx
+
+**pynx** is a minimal Nginx-like async reverse proxy / edge router written in Python.
+
+## Features (MVP)
+- Reverse proxy (HTTP)
+- Virtual hosts (server blocks)
+- Location routing (prefix + exact match)
+- Load balancing (round-robin)
+- Basic health checks (optional)
+- Prometheus metrics (optional)
+
+## Quickstart
+
+### Install (dev)
+```bash
+pip install -e .
+```
+
+### Run with YAML config
+```bash
+pynx run -c examples/pynx.yml
+```
+
+### Example curl
+```bash
+curl -H "Host: example.com" http://localhost:8080/
+```
+
+## Config format
+See `examples/pynx.yml`.
+
+## Roadmap
+- TLS termination + ACME
+- HTTP/2 + HTTP/3
+- Middleware pipeline (rate limit, auth, rewrite)
+- TCP/UDP proxy
+- Admin API + dashboard

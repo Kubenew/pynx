@@ -8,7 +8,7 @@ from .config import load_config
 from .router import Router, ServerBlock, Location
 from .upstreams import UpstreamRegistry
 from .app import create_app
-from .healthcheck import loop as healthcheck_loop
+from .healthcheck import HealthChecker
 
 app = typer.Typer(help="pynx - Nginx-like async reverse proxy in Python")
 
@@ -46,19 +46,17 @@ def run(config: str = typer.Option(..., "--config", "-c", help="Path to pynx YAM
         metrics_path=cfg.metrics.path,
     )
 
-    loop = asyncio.get_event_loop()
     if cfg.healthcheck.enabled:
-        loop.create_task(
-            healthcheck_loop(
-                registry=upstreams,
-                interval_seconds=cfg.healthcheck.interval_seconds,
-                timeout_seconds=cfg.healthcheck.timeout_seconds,
-                path=cfg.healthcheck.path,
+        checker = HealthChecker(timeout_seconds=cfg.healthcheck.timeout_seconds)
+
+        @starlette_app.on_event("startup")
+        async def start_healthcheck():
+            asyncio.create_task(
+                checker.loop(
+                    registry=upstreams,
+                    interval_seconds=cfg.healthcheck.interval_seconds,
+                    path=cfg.healthcheck.path,
+                )
             )
-        )
 
     uvicorn.run(starlette_app, host=host, port=port)
-
-
-if __name__ == "__main__":
-    app()
