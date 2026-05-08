@@ -1,0 +1,23 @@
+servers:
+  - listen: "0.0.0.0:8080"
+    server_name: "example.com"
+    locations:
+      - path: "/"
+        type: "prefix"
+        upstream: "app_upstream"
+
+upstreams:
+  app_upstream:
+    servers:
+      - url: "http://localhost:5000"
+      - url: "http://localhost:5001"
+
+metrics:
+  enabled: true
+  path: "/metrics"
+
+healthcheck:
+  enabled: true
+  interval_seconds: 5
+  timeout_seconds: 2
+  path: "/health"
